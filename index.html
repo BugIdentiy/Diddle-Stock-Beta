@@ -113,7 +113,7 @@
             padding: 12px;
             border-radius: 10px;
         }
-        /* Barre de contrôle optimisée pour éviter les superpositions */
+        /* Barre de contrôle */
         .controls-bar {
             background: white;
             padding: 15px 20px;
@@ -127,7 +127,7 @@
             margin-bottom: 25px;
         }
         .search-box {
-            flex: 1 1 200px; /* Taille flexible avec un minimum de 200px pour ne pas écraser les autres éléments */
+            flex: 1 1 200px;
             min-width: 180px;
             position: relative;
         }
@@ -389,31 +389,24 @@
             const raw = allSheetsData[currentSheet];
             if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
 
-            let headerIndex = -1;
-            for (let i = 0; i < raw.length; i++) {
-                if (raw[i] && raw[i][0] && raw[i][0].text) {
-                    const rowStr = String(raw[i][0].text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    if (rowStr.includes('numero') || rowStr.includes('num')) {
-                        headerIndex = i;
-                        break;
-                    }
-                }
-            }
-
-            if (headerIndex === -1) headerIndex = (raw.length > 2 ? 2 : 0);
-
             const rows = [];
-            for (let i = headerIndex + 1; i < raw.length; i++) {
+            for (let i = 0; i < raw.length; i++) {
                 const row = raw[i];
-                if (!row) continue;
+                if (!row || !row[0]) continue;
                 
-                const numCell = row[0] ? row[0].text : "";
-                const stockCell = row[1] ? row[1].text : "";
+                const numCell = row[0].text !== undefined ? row[0].text : row[0];
+                const stockCell = row[1] ? (row[1].text !== undefined ? row[1].text : row[1]) : "";
                 const imgCell = row[2] ? row[2] : { text: "", link: null };
+                
+                const numStr = String(numCell).toLowerCase().trim();
+                // Ignore automatiquement la ligne d'en-tête si elle contient des mots textuels
+                if (numStr === 'numero' || numStr === 'numéro' || numStr === 'num' || numStr === 'image' || numStr === 'stock') {
+                    continue;
+                }
                 
                 if (numCell !== "" && numCell !== undefined && numCell !== null) {
                     let imageUrl = imgCell.link || "";
-                    if (!imageUrl && imgCell.text && (imgCell.text.startsWith('http://') || imgCell.text.startsWith('https://'))) {
+                    if (!imageUrl && imgCell.text && (String(imgCell.text).startsWith('http://') || String(imgCell.text).startsWith('https://'))) {
                         imageUrl = imgCell.text;
                     }
 
