@@ -48,7 +48,6 @@
             font-size: 0.9em;
             font-weight: bold;
         }
-        /* Barre des onglets */
         .tabs-container {
             display: flex;
             gap: 10px;
@@ -79,7 +78,6 @@
             border-color: var(--primary-color);
             box-shadow: 0 4px 12px rgba(255, 64, 129, 0.3);
         }
-        /* Statistiques */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -113,7 +111,6 @@
             padding: 12px;
             border-radius: 10px;
         }
-        /* Barre de contrôle */
         .controls-bar {
             background: white;
             padding: 15px 20px;
@@ -181,7 +178,6 @@
             border-radius: 6px;
             outline: none;
         }
-        /* Grille des cartes */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -280,10 +276,8 @@
         <div class="sync-badge">Synchronisé !</div>
     </header>
 
-    <!-- Boutons d'onglets pour filtrer par feuille -->
     <div class="tabs-container" id="tabs-container"></div>
 
-    <!-- Statistiques dynamiques -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-info">
@@ -308,7 +302,6 @@
         </div>
     </div>
 
-    <!-- Barre de recherche et filtres -->
     <div class="controls-bar">
         <div class="search-box">
             <span>🔍</span>
@@ -316,8 +309,8 @@
         </div>
         <div class="filters-group">
             <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
-            <button class="filter-btn" onclick="setFilter('doublons', this)">Doublons</button>
-            <button class="filter-btn" onclick="setFilter('manquants', this)">Manquants</button>
+            <button class="filter-btn" onclick="setFilter('doublons', this)" id="btn-doublons">Doublons</button>
+            <button class="filter-btn" onclick="setFilter('manquants', this)" id="btn-manquants">Manquants</button>
         </div>
         <div class="per-page-select">
             Afficher : 
@@ -330,7 +323,6 @@
         </div>
     </div>
 
-    <!-- Grille de cartes -->
     <div id="loading-state">Chargement des données du stock...</div>
     <div class="cards-grid" id="cards-grid"></div>
 
@@ -392,36 +384,69 @@
             const rows = [];
             for (let i = 0; i < raw.length; i++) {
                 const row = raw[i];
-                if (!row || !row[0]) continue;
+                if (!row) continue;
                 
-                const numCell = row[0].text !== undefined ? row[0].text : row[0];
-                const stockCell = row[1] ? (row[1].text !== undefined ? row[1].text : row[1]) : "";
-                const imgCell = row[2] ? row[2] : { text: "", link: null };
+                // Récupération sécurisée des colonnes (A, B, C)
+                let numCell = row[0];
+                if (numCell && typeof numCell === 'object' && numCell.text !== undefined) numCell = numCell.text;
                 
-                const numStr = String(numCell).toLowerCase().trim();
-                // Ignore automatiquement la ligne d'en-tête si elle contient des mots textuels
+                let stockCell = row[1];
+                if (stockCell && typeof stockCell === 'object' && stockCell.text !== undefined) stockCell = stockCell.text;
+                
+                let imgCell = row[2];
+                let imageUrl = "";
+                let imgLink = "";
+                
+                if (imgCell) {
+                    if (typeof imgCell === 'object') {
+                        imgLink = imgCell.link || "";
+                        imageUrl = imgCell.text || "";
+                    } else {
+                        imageUrl = String(imgCell);
+                    }
+                }
+
+                let finalUrl = imgLink || imageUrl;
+                if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                    finalUrl = "";
+                }
+
+                let numStr = String(numCell).toLowerCase().trim();
+                // Ignore l'en-tête s'il existe
                 if (numStr === 'numero' || numStr === 'numéro' || numStr === 'num' || numStr === 'image' || numStr === 'stock') {
                     continue;
                 }
                 
                 if (numCell !== "" && numCell !== undefined && numCell !== null) {
-                    let imageUrl = imgCell.link || "";
-                    if (!imageUrl && imgCell.text && (String(imgCell.text).startsWith('http://') || String(imgCell.text).startsWith('https://'))) {
-                        imageUrl = imgCell.text;
-                    }
-
-                    let match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || imageUrl.match(/id=([a-zA-Z0-9_-]+)/);
+                    // Conversion lien Google Drive
+                    let match = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
                     if (match && match[1]) {
-                        imageUrl = `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
+                        finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
                     }
 
                     rows.push({
                         numero: numCell,
                         stock: (stockCell === "" || isNaN(Number(stockCell))) ? 0 : Number(stockCell),
-                        imageUrl: imageUrl
+                        imageUrl: finalUrl
                     });
                 }
             }
+
+            // Mode secours : si l'en-tête a bloqué toutes les lignes, on prend tout sans filtrer l'en-tête
+            if (rows.length === 0 && raw.length > 0) {
+                for (let i = 0; i < raw.length; i++) {
+                    const row = raw[i];
+                    if (!row || !row[0]) continue;
+                    let numCell = row[0].text !== undefined ? row[0].text : row[0];
+                    let stockCell = row[1] ? (row[1].text !== undefined ? row[1].text : row[1]) : 0;
+                    rows.push({
+                        numero: numCell,
+                        stock: isNaN(Number(stockCell)) ? 0 : Number(stockCell),
+                        imageUrl: ""
+                    });
+                }
+            }
+
             return rows;
         }
 
