@@ -332,7 +332,7 @@
     <div class="cards-grid" id="cards-grid"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRtEjY6pPmSuH0gL5dQZjIK2qNgAmKnMbyqc-02uBkIjxYHh0fv5sQkHh-6wa6CXu4/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAzSzaLnkbIVq7jJq2i_SwIxxo4F4F-BupofCLNbPV1arwFZyq0OuxWFZq5bBZkHqA/exec";
 
         let allSheetsData = {};
         let currentSheet = "";
@@ -388,8 +388,8 @@
 
             let headerIndex = -1;
             for (let i = 0; i < raw.length; i++) {
-                if (raw[i] && raw[i][0]) {
-                    const rowStr = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (raw[i] && raw[i][0] && raw[i][0].text) {
+                    const rowStr = String(raw[i][0].text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                     if (rowStr.includes('numero') || rowStr.includes('num')) {
                         headerIndex = i;
                         break;
@@ -403,15 +403,28 @@
             for (let i = headerIndex + 1; i < raw.length; i++) {
                 const row = raw[i];
                 if (!row) continue;
-                const num = row[0];
-                const stock = row[1];
-                const img = row[2];
                 
-                if (num !== "" && num !== undefined && num !== null) {
+                const numCell = row[0] ? row[0].text : "";
+                const stockCell = row[1] ? row[1].text : "";
+                const imgCell = row[2] ? row[2] : { text: "", link: null };
+                
+                if (numCell !== "" && numCell !== undefined && numCell !== null) {
+                    // Récupère l'URL prioritairement depuis le lien hypertexte, sinon depuis le texte si c'est une URL
+                    let imageUrl = imgCell.link || "";
+                    if (!imageUrl && imgCell.text && (imgCell.text.startsWith('http://') || imgCell.text.startsWith('https://'))) {
+                        imageUrl = imgCell.text;
+                    }
+
+                    // Conversion automatique du lien de partage Google Drive en lien d'affichage direct
+                    let match = imageUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || imageUrl.match(/id=([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        imageUrl = `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
+                    }
+
                     rows.push({
-                        numero: num,
-                        stock: (stock === "" || isNaN(Number(stock))) ? 0 : Number(stock),
-                        image: img || ""
+                        numero: numCell,
+                        stock: (stockCell === "" || isNaN(Number(stockCell))) ? 0 : Number(stockCell),
+                        imageUrl: imageUrl
                     });
                 }
             }
@@ -442,18 +455,6 @@
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderCards();
-        }
-
-        // Fonction pour convertir un lien Google Drive classique en lien d'affichage direct d'image
-        function getDriveDirectUrl(url) {
-            if (!url) return "";
-            url = String(url).trim();
-            // Si c'est un lien de partage Google Drive avec un ID
-            let match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
-            }
-            return url; // Retourne l'URL originale si elle est déjà au bon format
         }
 
         function renderCards() {
@@ -492,14 +493,11 @@
                 const badgeText = inStock ? `En stock (${item.stock})` : 'Épuisé';
 
                 let imageHtml = '';
-                const imgVal = String(item.image).trim();
-
-                if (imgVal.toLowerCase() === "voir l'image" || imgVal === "") {
-                    imageHtml = `<span class="card-image-placeholder">Aucun lien d'image</span>`;
+                if (item.imageUrl) {
+                    imageHtml = `<img src="${item.imageUrl}" alt="Feuille #${item.numero}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                 <span class="card-image-placeholder" style="display:none;">Aucune image</span>`;
                 } else {
-                    const directUrl = getDriveDirectUrl(imgVal);
-                    imageHtml = `<img src="${directUrl}" alt="Feuille #${item.numero}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                 <span class="card-image-placeholder" style="display:none;">Erreur de chargement</span>`;
+                    imageHtml = `<span class="card-image-placeholder">Aucune image</span>`;
                 }
 
                 card.innerHTML = `
