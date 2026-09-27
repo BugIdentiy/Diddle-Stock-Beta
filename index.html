@@ -3,100 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diddle Stock Beta</title>
+    <title>Les Diddle d'Angélique - Stock</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
-        h1 { color: #007bff; text-align: center; }
-        #loading { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background-color: #e0e0e0; font-weight: bold; border-radius: 5px; transition: background 0.3s, color 0.3s; }
-        .tab-btn.active { background-color: #007bff; color: white; }
-        .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 0.95em; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+        :root {
+            --primary-color: #ff4081;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --green-badge: #e8f5e9;
+            --green-text: #2e7d32;
+            --red-badge: #ffebee;
+            --red-text: #c62828;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, #ff80ab, #b388ff);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sync-badge {
+            background: #66bb6a;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        /* Conteneur des onglets */
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            justify-content: center;
+        }
+        .tab-btn {
+            background: #e0e0e0;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 64, 129, 0.3);
+        }
+        /* Statistiques */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.85em;
+            color: #777;
+            text-transform: uppercase;
+        }
+        .stat-info .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #222;
+            margin: 0;
+        }
+        .stat-icon {
+            font-size: 1.8em;
+            background: #fce4ec;
+            padding: 12px;
+            border-radius: 10px;
+        }
+        /* Barre de contrôle */
+        .controls-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 35px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.95em;
+        }
+        .search-box span {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+        .filters-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .per-page-select {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .per-page-select select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+        }
+        /* Grille des cartes */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .diddle-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+        .diddle-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-num {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+        .stock-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        .stock-badge.in-stock {
+            background: var(--green-badge);
+            color: var(--green-text);
+        }
+        .stock-badge.out-stock {
+            background: var(--red-badge);
+            color: var(--red-text);
+        }
+        .card-image-container {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .card-image-placeholder {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+        .zoom-btn {
+            background: #fce4ec;
+            color: var(--primary-color);
+            border: none;
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .zoom-btn:hover {
+            background: #f8bbd0;
+        }
+        #loading-state {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #666;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Diddle Stock Beta</h1>
-    <div id="loading">Chargement des onglets et des stocks en cours...</div>
-    
-    <div class="tabs" id="tabs-container"></div>
-    <div class="table-container" id="table-container"></div>
+    <header>
+        <h1>🧀 Les Diddle d'Angélique</h1>
+        <div class="sync-badge">Synchronisé !</div>
+    </header>
+
+    <!-- Boutons d'onglets générés dynamiquement -->
+    <div class="tabs-container" id="tabs-container"></div>
+
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Total feuilles</h3>
+                <p class="value" id="stat-total">0</p>
+            </div>
+            <div class="stat-icon">🎁</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>En stock</h3>
+                <p class="value" id="stat-instock">0</p>
+            </div>
+            <div class="stat-icon">💚</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Manquants</h3>
+                <p class="value" id="stat-missing">0</p>
+            </div>
+            <div class="stat-icon">💔</div>
+        </div>
+    </div>
+
+    <!-- Barre de recherche et filtres -->
+    <div class="controls-bar">
+        <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="search-input" placeholder="Rechercher par numéro..." oninput="renderCards()">
+        </div>
+        <div class="filters-group">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
+            <button class="filter-btn" onclick="setFilter('doublons', this)">Doublons</button>
+            <button class="filter-btn" onclick="setFilter('manquants', this)">Manquants</button>
+        </div>
+        <div class="per-page-select">
+            Afficher : 
+            <select id="per-page" onchange="renderCards()">
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">Tous</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Grille principale -->
+    <div id="loading-state">Chargement des données du stock...</div>
+    <div class="cards-grid" id="cards-grid"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsMujiMbV3ubiXgzfajPtQ_jpYas9uaWoPLj2zh8IX-IUsQ5DqW0LUtZa6EDqr7yBO/exec";
-        
-        let allData = {};
-        let currentTab = "";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznAZtbLshwqB-mjfolCwapFTurGPLb5T_4DTcO6Lfd_Wq3Aex_VXGmVVIdJDN94br-/exec";
 
-        async function fetchStockData() {
+        let allSheetsData = {};
+        let currentSheet = "";
+        let currentFilter = "all";
+
+        async function initStockApp() {
             try {
                 const response = await fetch(SCRIPT_URL);
-                allData = await response.json();
+                allSheetsData = await response.json();
                 
-                document.getElementById('loading').style.display = 'none';
-                
-                const sheetNames = Object.keys(allData);
+                document.getElementById('loading-state').style.display = 'none';
+
+                const sheetNames = Object.keys(allSheetsData);
                 if (sheetNames.length > 0) {
-                    currentTab = sheetNames[0]; // Sélectionne le premier onglet par défaut
+                    currentSheet = sheetNames[0]; // Onglet par défaut
                     renderTabs(sheetNames);
-                    renderTable(currentTab);
+                    renderContent();
                 } else {
-                    document.getElementById('table-container').innerHTML = "<p>Aucun onglet trouvé dans le document.</p>";
+                    document.getElementById('loading-state').innerText = "Aucun onglet trouvé.";
+                    document.getElementById('loading-state').style.display = 'block';
                 }
-            } catch (error) {
-                document.getElementById('loading').innerText = "Erreur lors du chargement des données.";
-                console.error(error);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading-state').innerText = "Erreur de chargement des données.";
             }
         }
 
         function renderTabs(sheetNames) {
             const container = document.getElementById('tabs-container');
             container.innerHTML = '';
-            
             sheetNames.forEach(name => {
                 const btn = document.createElement('button');
-                btn.className = `tab-btn ${name === currentTab ? 'active' : ''}`;
+                btn.className = `tab-btn ${name === currentSheet ? 'active' : ''}`;
                 btn.innerText = name;
                 btn.onclick = () => {
-                    currentTab = name;
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    renderTable(currentTab);
+                    currentSheet = name;
+                    renderTabs(sheetNames);
+                    renderContent();
                 };
                 container.appendChild(btn);
             });
         }
 
-        function renderTable(sheetName) {
-            const container = document.getElementById('table-container');
-            const rows = allData[sheetName];
+        function getSheetRows() {
+            const raw = allSheetsData[currentSheet];
+            if (!raw || raw.length === 0) return [];
+
+            // Recherche automatique de la ligne d'en-tête contenant "Numéro" ou "Numero"
+            let headerIndex = 0;
+            for (let i = 0; i < Math.min(5, raw.length); i++) {
+                if (String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes('numero')) {
+                    headerIndex = i;
+                    break;
+                }
+            }
+
+            const rows = [];
+            for (let i = headerIndex + 1; i < raw.length; i++) {
+                const num = raw[i][0];
+                const stock = raw[i][1];
+                const img = raw[i][2];
+                if (num !== "" && num !== undefined) {
+                    rows.push({
+                        numero: num,
+                        stock: isNaN(Number(stock)) ? 0 : Number(stock),
+                        image: img || ""
+                    });
+                }
+            }
+            return rows;
+        }
+
+        function renderContent() {
+            const rows = getSheetRows();
+
+            let total = rows.length;
+            let inStockCount = 0;
+            let missingCount = 0;
+
+            rows.forEach(r => {
+                if (r.stock > 0) inStockCount++;
+                else missingCount++;
+            });
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-instock').innerText = inStockCount;
+            document.getElementById('stat-missing').innerText = missingCount;
+
+            renderCards();
+        }
+
+        function setFilter(filterType, btn) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderCards();
+        }
+
+        function renderCards() {
+            const rows = getSheetRows();
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const perPageVal = document.getElementById('per-page').value;
+            const limit = perPageVal === 'all' ? 999999 : Number(perPageVal);
             
-            if (!rows || rows.length === 0) {
-                container.innerHTML = "<p>Cet onglet est vide.</p>";
+            const grid = document.getElementById('cards-grid');
+            grid.innerHTML = '';
+
+            const filtered = rows.filter(r => {
+                const matchSearch = String(r.numero).toLowerCase().includes(searchQuery);
+                let matchFilter = true;
+                if (currentFilter === 'doublons') {
+                    matchFilter = r.stock > 1;
+                } else if (currentFilter === 'manquants') {
+                    matchFilter = r.stock === 0;
+                }
+                return matchSearch && matchFilter;
+            });
+
+            const displayList = filtered.slice(0, limit);
+
+            if (displayList.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">Aucun élément trouvé.</p>`;
                 return;
             }
 
-            let html = '<table>';
-            rows.forEach((row, index) => {
-                html += '<tr>';
-                row.forEach(cell => {
-                    if (index === 0) {
-                        html += `<th>${cell !== "" ? cell : ''}</th>`;
-                    } else {
-                        html += `<td>${cell}</td>`;
-                    }
-                });
-                html += '</tr>';
+            displayList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'diddle-card';
+
+                const inStock = item.stock > 0;
+                const badgeClass = inStock ? 'in-stock' : 'out-stock';
+                const badgeText = inStock ? `En stock (${item.stock})` : 'Épuisé';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-num">#${item.numero}</span>
+                        <span class="stock-badge ${badgeClass}">${badgeText}</span>
+                    </div>
+                    <div class="card-image-container">
+                        <span class="card-image-placeholder">${item.image ? item.image : "Voir l'image"}</span>
+                    </div>
+                    <button class="zoom-btn" onclick="alert('Feuille #${item.numero} - Stock: ${item.stock}')">🔍 Agrandir</button>
+                `;
+                grid.appendChild(card);
             });
-            html += '</table>';
-            container.innerHTML = html;
         }
 
-        fetchStockData();
+        // Lancement au chargement de la page
+        initStockApp();
     </script>
 </body>
 </html>
