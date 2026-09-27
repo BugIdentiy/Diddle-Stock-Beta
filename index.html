@@ -309,8 +309,8 @@
         </div>
         <div class="filters-group">
             <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
-            <button class="filter-btn" onclick="setFilter('doublons', this)" id="btn-doublons">Doublons</button>
-            <button class="filter-btn" onclick="setFilter('manquants', this)" id="btn-manquants">Manquants</button>
+            <button class="filter-btn" onclick="setFilter('doublons', this)">Doublons</button>
+            <button class="filter-btn" onclick="setFilter('manquants', this)">Manquants</button>
         </div>
         <div class="per-page-select">
             Afficher : 
@@ -327,7 +327,7 @@
     <div class="cards-grid" id="cards-grid"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRtEjY6pPmSuH0gL5dQZjIK2qNgAmKnMbyqc-02uBkIjxYHh0fv5sQkHh-6wa6CXu4/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAzSzaLnkbIVq7jJq2i_SwIxxo4F4F-BupofCLNbPV1arwFZyq0OuxWFZq5bBZkHqA/exec";
 
         let allSheetsData = {};
         let currentSheet = "";
@@ -386,7 +386,6 @@
                 const row = raw[i];
                 if (!row) continue;
                 
-                // Récupération sécurisée des colonnes (A, B, C)
                 let numCell = row[0];
                 if (numCell && typeof numCell === 'object' && numCell.text !== undefined) numCell = numCell.text;
                 
@@ -412,16 +411,15 @@
                 }
 
                 let numStr = String(numCell).toLowerCase().trim();
-                // Ignore l'en-tête s'il existe
                 if (numStr === 'numero' || numStr === 'numéro' || numStr === 'num' || numStr === 'image' || numStr === 'stock') {
                     continue;
                 }
                 
                 if (numCell !== "" && numCell !== undefined && numCell !== null) {
-                    // Conversion lien Google Drive
+                    // Extraction de l'ID Google Drive pour construire l'URL d'affichage direct
                     let match = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
                     if (match && match[1]) {
-                        finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
+                        finalUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
                     }
 
                     rows.push({
@@ -432,7 +430,6 @@
                 }
             }
 
-            // Mode secours : si l'en-tête a bloqué toutes les lignes, on prend tout sans filtrer l'en-tête
             if (rows.length === 0 && raw.length > 0) {
                 for (let i = 0; i < raw.length; i++) {
                     const row = raw[i];
@@ -513,7 +510,8 @@
 
                 let imageHtml = '';
                 if (item.imageUrl) {
-                    imageHtml = `<img src="${item.imageUrl}" alt="Feuille #${item.numero}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    // Double sécurité de chargement d'image Google Drive avec secours automatique
+                    imageHtml = `<img src="${item.imageUrl}" alt="Feuille #${item.numero}" onerror="if(!this.dataset.fallback){this.dataset.fallback='true'; this.src=this.src.replace('uc?export=view&id=', 'thumbnail?id=')+'&sz=w400';}else{this.style.display='none'; this.nextElementSibling.style.display='block';}">
                                  <span class="card-image-placeholder" style="display:none;">Aucune image</span>`;
                 } else {
                     imageHtml = `<span class="card-image-placeholder">Aucune image</span>`;
