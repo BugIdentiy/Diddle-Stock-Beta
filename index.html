@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Les Diddl d'Angélique 🐭</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #fcf6f9;
+            color: #4a404a;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-pink-200">
+
+    <header class="bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 text-white shadow-lg sticky top-0 z-20 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <h1 class="text-2xl font-bold flex items-center gap-3 drop-shadow-sm">
+                <span class="text-3xl">🧀</span> Les Diddl d'Angélique
+            </h1>
+            <div id="sync-status" class="text-xs bg-white/30 backdrop-blur-md px-4 py-1.5 rounded-full font-semibold shadow-inner flex items-center gap-2">
+                <i class="fa-solid fa-sync fa-spin"></i> Chargement des douceurs...
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 py-8 flex-grow">
+        
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-pink-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-pink-500 font-bold">Total feuilles</p>
+                    <p id="stat-total" class="text-4xl font-extrabold text-gray-700 mt-1">-</p>
+                </div>
+                <div class="p-4 bg-pink-50 text-pink-500 rounded-2xl text-2xl shadow-inner"><i class="fa-solid fa-gift"></i></div>
+            </div>
+            
+            <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-emerald-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-emerald-600 font-bold">En stock</p>
+                    <p id="stat-instock" class="text-4xl font-extrabold text-emerald-600 mt-1">-</p>
+                </div>
+                <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-2xl shadow-inner"><i class="fa-solid fa-heart-circle-check"></i></div>
+            </div>
+            
+            <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-rose-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-rose-500 font-bold">Manquants</p>
+                    <p id="stat-outstock" class="text-4xl font-extrabold text-rose-500 mt-1">-</p>
+                </div>
+                <div class="p-4 bg-rose-50 text-rose-500 rounded-2xl text-2xl shadow-inner"><i class="fa-solid fa-heart-crack"></i></div>
+            </div>
+        </div>
+
+        <!-- Recherche et Filtres -->
+        <div class="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-sm border border-pink-100 mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="relative w-full md:w-80">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-pink-400">
+                    <i class="fa-solid fa-search"></i>
+                </span>
+                <input type="text" id="search-input" placeholder="Rechercher par numéro..." 
+                    class="w-full pl-11 pr-4 py-3 bg-pink-50/50 border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 focus:bg-white text-sm transition">
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                <div class="flex gap-2">
+                    <button onclick="filterStatus('all')" id="btn-all" class="filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-pink-500 text-white shadow-md shadow-pink-200 transition">Tous</button>
+                    <button onclick="filterStatus('1')" id="btn-in" class="filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-600 border border-pink-100 hover:bg-pink-50 transition">Doublons</button>
+                    <button onclick="filterStatus('0')" id="btn-out" class="filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-600 border border-pink-100 hover:bg-pink-50 transition">Manquants</button>
+                </div>
+
+                <div class="flex items-center gap-2 bg-pink-50/60 px-3 py-2 rounded-xl border border-pink-100">
+                    <span class="text-xs font-bold text-pink-500">Afficher :</span>
+                    <select id="items-per-page" onchange="changeItemsPerPage(this.value)" class="bg-white border border-pink-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400">
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grille -->
+        <div id="items-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
+        
+        <div id="no-results" class="hidden text-center py-16">
+            <span class="text-4xl block mb-2">🔍</span>
+            <p class="text-pink-400 font-semibold text-lg">Oups ! Aucun trésor Diddle trouvé.</p>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination-container" class="flex flex-col sm:flex-row items-center justify-between mt-8 bg-white/80 backdrop-blur-sm p-4 rounded-2xl shadow-sm border border-pink-100 hidden">
+            <button id="prev-btn" onclick="changePage(-1)" class="px-5 py-2.5 bg-pink-50 text-pink-600 rounded-xl font-bold text-sm hover:bg-pink-500 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed shadow-sm">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Précédent
+            </button>
+            <span id="page-info" class="text-sm font-bold text-gray-600 my-2 sm:my-0">Page 1 sur 1</span>
+            <button id="next-btn" onclick="changePage(1)" class="px-5 py-2.5 bg-pink-50 text-pink-600 rounded-xl font-bold text-sm hover:bg-pink-500 hover:text-white transition disabled:opacity-30 disabled:cursor-not-allowed shadow-sm">
+                Suivant <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal image -->
+    <div id="image-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
+        <div class="bg-white p-6 rounded-3xl max-w-lg w-full relative text-center shadow-2xl border-4 border-pink-200" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute top-4 right-4 bg-pink-100 text-pink-600 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-pink-200 transition">&times;</button>
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-pink-600"></h3>
+            <div class="bg-pink-50/50 p-3 rounded-2xl border border-pink-100 mb-4">
+                <img id="modal-img" src="" alt="Agrandissement" class="max-h-[60vh] mx-auto rounded-xl object-contain">
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white/60 border-t border-pink-100 py-6 text-center text-xs text-pink-400 font-medium mt-12">
+        ✨ Application Diddle Stock - Hébergée sur GitHub Pages sans publicité ✨
+    </footer>
+
+    <script>
+        // METTEZ VOTRE URL APPS SCRIPT /exec ICI :
+        const API_URL = "https://script.google.com/macros/s/AKfycbznAZtbLshwqB-mjfolCwapFTurGPLb5T_4DTcO6Lfd_Wq3Aex_VXGmVVIdJDN94br-/exec";
+
+        let allData = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let currentPage = 1;
+        let itemsPerPage = 20;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch(API_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.error) throw new Error(data.error);
+                    allData = data;
+                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-sparkles"></i> Synchronisé !';
+                    document.getElementById('sync-status').className = 'text-xs bg-emerald-400 text-white px-4 py-1.5 rounded-full font-semibold shadow-inner';
+                    updateStats();
+                    renderItems();
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('sync-status').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Erreur';
+                    document.getElementById('sync-status').className = 'text-xs bg-rose-400 text-white px-4 py-1.5 rounded-full font-semibold shadow-inner';
+                });
+
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                searchQuery = e.target.value.trim();
+                currentPage = 1;
+                renderItems();
+            });
+        });
+
+        function updateStats() {
+            const total = allData.length;
+            const inStock = allData.filter(item => item['En stock'] === '1').length;
+            const outStock = total - inStock;
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-instock').innerText = inStock;
+            document.getElementById('stat-outstock').innerText = outStock;
+        }
+
+        function filterStatus(status) {
+            currentFilter = status;
+            currentPage = 1;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-600 border border-pink-100 hover:bg-pink-50 transition";
+            });
+            if(status === 'all') document.getElementById('btn-all').className = "filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-pink-500 text-white shadow-md shadow-pink-200 transition";
+            if(status === '1') document.getElementById('btn-in').className = "filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-emerald-500 text-white shadow-md shadow-emerald-200 transition";
+            if(status === '0') document.getElementById('btn-out').className = "filter-btn px-4 py-2.5 rounded-xl text-sm font-bold bg-rose-500 text-white shadow-md shadow-rose-200 transition";
+            renderItems();
+        }
+
+        function changeItemsPerPage(val) {
+            itemsPerPage = parseInt(val, 10);
+            currentPage = 1;
+            renderItems();
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderItems();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderItems() {
+            const grid = document.getElementById('items-grid');
+            const noResults = document.getElementById('no-results');
+            const paginationContainer = document.getElementById('pagination-container');
+            grid.innerHTML = '';
+
+            const filtered = allData.filter(item => {
+                const matchStatus = (currentFilter === 'all') || (item['En stock'] === currentFilter);
+                const matchSearch = item['Numéro'].toLowerCase().includes(searchQuery.toLowerCase());
+                return matchStatus && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                noResults.classList.remove('hidden');
+                paginationContainer.classList.add('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedItems = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+            if (filtered.length > itemsPerPage) {
+                paginationContainer.classList.remove('hidden');
+                document.getElementById('page-info').innerText = `Page ${currentPage} sur ${totalPages} (${filtered.length} articles)`;
+                document.getElementById('prev-btn').disabled = (currentPage === 1);
+                document.getElementById('next-btn').disabled = (currentPage === totalPages);
+            } else {
+                paginationContainer.classList.add('hidden');
+            }
+
+            paginatedItems.forEach(item => {
+                const isInStock = item['En stock'] === '1';
+                const card = document.createElement('div');
+                card.className = `bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-sm border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col justify-between ${isInStock ? 'border-emerald-200' : 'border-pink-100/60'}`;
+                
+                let imageContent = item['Image'] ? `
+                    <div class="my-2 h-40 flex items-center justify-center bg-pink-50/40 rounded-xl overflow-hidden border border-pink-100/50 cursor-pointer group relative" onclick="openModal('${item['Image'].replace(/'/g, "\\'")}', 'Trésor #${item['Numéro']}')">
+                        <img src="${item['Image']}" alt="Article #${item['Numéro']}" class="max-h-full max-w-full object-contain group-hover:scale-110 transition duration-300" loading="lazy">
+                        <div class="absolute inset-0 bg-pink-500/10 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            <span class="bg-white/90 text-pink-600 text-xs px-2.5 py-1 rounded-full font-bold shadow-sm"><i class="fa-solid fa-expand"></i> Voir</span>
+                        </div>
+                    </div>` : `
+                    <div class="my-2 h-40 flex flex-col items-center justify-center bg-pink-50/30 rounded-xl border border-pink-100/50 text-pink-300 text-xs">
+                        <i class="fa-regular fa-image text-3xl mb-1"></i>
+                        <span>Aucune image</span>
+                    </div>`;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-base font-extrabold text-gray-700 bg-pink-50 px-2.5 py-0.5 rounded-lg border border-pink-100">#${item['Numéro']}</span>
+                            <span class="px-2.5 py-1 text-xs font-bold rounded-full ${isInStock ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-600 border border-rose-200'}">
+                                ${isInStock ? 'En stock (' + item['StockValue'] + ')' : 'Épuisé'}
+                            </span>
+                        </div>
+                        ${imageContent}
+                    </div>
+                    ${item['Image'] ? `<button onclick="openModal('${item['Image'].replace(/'/g, "\\'")}', 'Trésor #${item['Numéro']}')" class="w-full mt-2 py-1.5 bg-pink-50 text-pink-600 hover:bg-pink-500 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"><i class="fa-solid fa-magnifying-glass-plus"></i> Agrandir</button>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openModal(url, title) {
+            document.getElementById('modal-img').src = url;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
