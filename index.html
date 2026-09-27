@@ -42,11 +42,12 @@
             gap: 10px;
         }
         .sync-badge {
-            background: #66bb6a;
+            background: #ffa726; /* Orange au départ (chargement) */
             padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.9em;
             font-weight: bold;
+            transition: background 0.3s ease;
         }
         .tabs-container {
             display: flex;
@@ -232,7 +233,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            margin-bottom: 0; /* Ajusté pour occuper l'espace du bouton retiré */
+            margin-bottom: 0;
             text-align: center;
         }
         .card-image-container img {
@@ -287,7 +288,8 @@
 
     <header>
         <h1>🧀 Les Diddl d'Angélique</h1>
-        <div class="sync-badge">Synchronisé !</div>
+        <!-- Ajout de l'id "sync-badge" pour le pilotage dynamique -->
+        <div class="sync-badge" id="sync-badge">Chargement...</div>
     </header>
 
     <div class="tabs-container" id="tabs-container"></div>
@@ -348,6 +350,10 @@
         let currentPage = 1;
 
         async function initStockApp() {
+            const syncBadge = document.getElementById('sync-badge');
+            syncBadge.innerText = "Chargement...";
+            syncBadge.style.background = "#ffa726"; // Orange de chargement
+
             try {
                 const response = await fetch(SCRIPT_URL);
                 allSheetsData = await response.json();
@@ -363,15 +369,25 @@
                     currentSheet = sheetNames[0];
                     renderTabs(sheetNames);
                     renderContent();
+
+                    // Chargement réussi -> Passage au vert "Synchronisé !"
+                    syncBadge.innerText = "Synchronisé !";
+                    syncBadge.style.background = "#66bb6a";
                 } else {
                     document.getElementById('loading-state').innerText = "Aucun onglet trouvé.";
                     document.getElementById('loading-state').style.display = 'block';
+                    syncBadge.innerText = "Vide";
+                    syncBadge.style.background = "#c62828";
                 }
             } catch (err) {
                 console.error(err);
                 document.getElementById('loading-state').innerText = err.message;
                 document.getElementById('loading-state').style.display = 'block';
                 document.getElementById('loading-state').style.color = '#c62828';
+
+                // En cas d'erreur de chargement
+                syncBadge.innerText = "Erreur synchro";
+                syncBadge.style.background = "#c62828";
             }
         }
 
