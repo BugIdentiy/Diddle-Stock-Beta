@@ -243,7 +243,6 @@
         .card-image-placeholder {
             color: #888;
             font-size: 0.85em;
-            padding: 10px;
         }
         .zoom-btn {
             background: #fce4ec;
@@ -352,7 +351,7 @@
 
                 const sheetNames = Object.keys(allSheetsData);
                 if (sheetNames.length > 0) {
-                    currentSheet = sheetNames[0]; // Onglet par défaut
+                    currentSheet = sheetNames[0];
                     renderTabs(sheetNames);
                     renderContent();
                 } else {
@@ -445,6 +444,18 @@
             renderCards();
         }
 
+        // Fonction pour convertir un lien Google Drive classique en lien d'affichage direct d'image
+        function getDriveDirectUrl(url) {
+            if (!url) return "";
+            url = String(url).trim();
+            // Si c'est un lien de partage Google Drive avec un ID
+            let match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return `https://lh3.googleusercontent.com/d/${match[1]}=s400`;
+            }
+            return url; // Retourne l'URL originale si elle est déjà au bon format
+        }
+
         function renderCards() {
             const rows = getSheetRows();
             const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
@@ -480,21 +491,15 @@
                 const badgeClass = inStock ? 'in-stock' : 'out-stock';
                 const badgeText = inStock ? `En stock (${item.stock})` : 'Épuisé';
 
-                // Gestion de l'affichage de l'image
                 let imageHtml = '';
                 const imgVal = String(item.image).trim();
 
-                if (imgVal.startsWith('http://') || imgVal.startsWith('https://')) {
-                    // Si c'est une URL directe
-                    imageHtml = `<img src="${imgVal}" alt="Feuille #${item.numero}">`;
-                } else if (imgVal !== "" && imgVal.toLowerCase() !== "voir l'image") {
-                    // Si c'est une référence d'image (ex: identifiant ou nom de fichier type BRU0004), 
-                    // vous pouvez adapter le chemin de votre dossier d'images ci-dessous si nécessaire :
-                    // Exemple : const imageUrl = `images/${imgVal}.jpg`;
-                    // Pour l'instant, s'il y a un texte/référence, on l'affiche ou on tente de charger une URL relative :
-                    imageHtml = `<span class="card-image-placeholder">${imgVal}</span>`;
+                if (imgVal.toLowerCase() === "voir l'image" || imgVal === "") {
+                    imageHtml = `<span class="card-image-placeholder">Aucun lien d'image</span>`;
                 } else {
-                    imageHtml = `<span class="card-image-placeholder">Aucune image</span>`;
+                    const directUrl = getDriveDirectUrl(imgVal);
+                    imageHtml = `<img src="${directUrl}" alt="Feuille #${item.numero}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                 <span class="card-image-placeholder" style="display:none;">Erreur de chargement</span>`;
                 }
 
                 card.innerHTML = `
