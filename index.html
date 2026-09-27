@@ -182,6 +182,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 20px;
+            margin-bottom: 30px;
         }
         .diddle-card {
             background: white;
@@ -261,6 +262,38 @@
         .zoom-btn:hover {
             background: #f8bbd0;
         }
+        /* Style de la pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        .page-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .page-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
         #loading-state {
             text-align: center;
             padding: 50px;
@@ -305,7 +338,7 @@
     <div class="controls-bar">
         <div class="search-box">
             <span>🔍</span>
-            <input type="text" id="search-input" placeholder="Rechercher par numéro..." oninput="renderCards()">
+            <input type="text" id="search-input" placeholder="Rechercher par numéro..." oninput="onSearchOrFilterChange()">
         </div>
         <div class="filters-group">
             <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
@@ -314,7 +347,7 @@
         </div>
         <div class="per-page-select">
             Afficher : 
-            <select id="per-page" onchange="renderCards()">
+            <select id="per-page" onchange="onSearchOrFilterChange()">
                 <option value="20">20</option>
                 <option value="50">50</option>
                 <option value="100">100</option>
@@ -325,6 +358,7 @@
 
     <div id="loading-state">Chargement des données du stock...</div>
     <div class="cards-grid" id="cards-grid"></div>
+    <div class="pagination-container" id="pagination-container"></div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAzSzaLnkbIVq7jJq2i_SwIxxo4F4F-BupofCLNbPV1arwFZyq0OuxWFZq5bBZkHqA/exec";
@@ -332,6 +366,7 @@
         let allSheetsData = {};
         let currentSheet = "";
         let currentFilter = "all";
+        let currentPage = 1;
 
         async function initStockApp() {
             try {
@@ -370,6 +405,7 @@
                 btn.innerText = name;
                 btn.onclick = () => {
                     currentSheet = name;
+                    currentPage = 1; // Remet à la première page lors du changement d'onglet
                     renderTabs(sheetNames);
                     renderContent();
                 };
@@ -411,8 +447,6 @@
                 }
 
                 let numStr = String(numCell).toLowerCase().trim();
-                
-                // EXCLUSION des en-têtes et des titres d'onglets indésirables (#A6, #A5, #A4, Relief, Pal, [merged], etc.)
                 if (
                     numStr === 'numero' || 
                     numStr === 'numéro' || 
@@ -466,8 +500,14 @@
 
         function setFilter(filterType, btn) {
             currentFilter = filterType;
+            currentPage = 1; // Remet à la première page lors du changement de filtre
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            renderCards();
+        }
+
+        function onSearchOrFilterChange() {
+            currentPage = 1; // Remet à la première page lors d'une recherche
             renderCards();
         }
 
@@ -475,11 +515,7 @@
             const rows = getSheetRows();
             const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
             const perPageVal = document.getElementById('per-page').value;
-            const limit = perPageVal === 'all' ? 999999 : Number(perPageVal);
             
-            const grid = document.getElementById('cards-grid');
-            grid.innerHTML = '';
-
             const filtered = rows.filter(r => {
                 const matchSearch = String(r.numero).toLowerCase().includes(searchQuery);
                 let matchFilter = true;
@@ -491,10 +527,21 @@
                 return matchSearch && matchFilter;
             });
 
-            const displayList = filtered.slice(0, limit);
+            const limit = perPageVal === 'all' ? filtered.length : Number(perPageVal);
+            const totalPages = limit > 0 ? Math.ceil(filtered.length / limit) : 1;
+            
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+            if (currentPage < 1) currentPage = 1;
+
+            const start = (currentPage - 1) * limit;
+            const displayList = filtered.slice(start, start + limit);
+            
+            const grid = document.getElementById('cards-grid');
+            grid.innerHTML = '';
 
             if (displayList.length === 0) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #888; padding: 40px;">Aucun élément trouvé.</p>`;
+                document.getElementById('pagination-container').innerHTML = '';
                 return;
             }
 
@@ -526,6 +573,64 @@
                 `;
                 grid.appendChild(card);
             });
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('pagination-container');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Bouton Précédent
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerText = '◀ Précédent';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderCards();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+            container.appendChild(prevBtn);
+
+            // Numéros de pages
+            for (let i = 1; i <= totalPages; i++) {
+                // Pour éviter d'afficher 50 boutons si on a des centaines de pages, on peut afficher les pages proches ou toutes si < 10
+                if (totalPages <= 10 || i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                    pageBtn.innerText = i;
+                    pageBtn.onclick = () => {
+                        currentPage = i;
+                        renderCards();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    container.appendChild(pageBtn);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const span = document.createElement('span');
+                    span.innerText = '...';
+                    span.style.padding = '0 5px';
+                    container.appendChild(span);
+                }
+            }
+
+            // Bouton Suivant
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerText = 'Suivant ▶';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderCards();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+            container.appendChild(nextBtn);
         }
 
         initStockApp();
