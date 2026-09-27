@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Les Diddl d'Angélique</title>
+    <title>Les Diddle d'Angélique</title>
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #ff80ab, #b388ff);
@@ -232,7 +232,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            margin-bottom: 12px;
+            margin-bottom: 0; /* Ajusté pour occuper l'espace du bouton retiré */
             text-align: center;
         }
         .card-image-container img {
@@ -244,25 +244,6 @@
             color: #888;
             font-size: 0.85em;
         }
-        .zoom-btn {
-            background: #fce4ec;
-            color: var(--primary-color);
-            border: none;
-            width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            transition: background 0.2s;
-        }
-        .zoom-btn:hover {
-            background: #f8bbd0;
-        }
-        /* Style de la pagination */
         .pagination-container {
             display: flex;
             justify-content: center;
@@ -305,7 +286,7 @@
 <body>
 
     <header>
-        <h1>🧀 Les Diddl d'Angélique</h1>
+        <h1>🧀 Les Diddle d'Angélique</h1>
         <div class="sync-badge">Synchronisé !</div>
     </header>
 
@@ -405,7 +386,7 @@
                 btn.innerText = name;
                 btn.onclick = () => {
                     currentSheet = name;
-                    currentPage = 1; // Remet à la première page lors du changement d'onglet
+                    currentPage = 1;
                     renderTabs(sheetNames);
                     renderContent();
                 };
@@ -500,14 +481,14 @@
 
         function setFilter(filterType, btn) {
             currentFilter = filterType;
-            currentPage = 1; // Remet à la première page lors du changement de filtre
+            currentPage = 1;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderCards();
         }
 
         function onSearchOrFilterChange() {
-            currentPage = 1; // Remet à la première page lors d'une recherche
+            currentPage = 1;
             renderCards();
         }
 
@@ -569,7 +550,6 @@
                     <div class="card-image-container">
                         ${imageHtml}
                     </div>
-                    <button class="zoom-btn" onclick="alert('Onglet : ${currentSheet} | Numéro : #${item.numero} | Stock : ${item.stock}')">🔍 Agrandir</button>
                 `;
                 grid.appendChild(card);
             });
@@ -583,7 +563,6 @@
 
             if (totalPages <= 1) return;
 
-            // Bouton Précédent
             const prevBtn = document.createElement('button');
             prevBtn.className = 'page-btn';
             prevBtn.innerText = '◀ Précédent';
@@ -597,9 +576,7 @@
             };
             container.appendChild(prevBtn);
 
-            // Numéros de pages
             for (let i = 1; i <= totalPages; i++) {
-                // Pour éviter d'afficher 50 boutons si on a des centaines de pages, on peut afficher les pages proches ou toutes si < 10
                 if (totalPages <= 10 || i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
                     const pageBtn = document.createElement('button');
                     pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -618,7 +595,6 @@
                 }
             }
 
-            // Bouton Suivant
             const nextBtn = document.createElement('button');
             nextBtn.className = 'page-btn';
             nextBtn.innerText = 'Suivant ▶';
