@@ -411,12 +411,25 @@
                 }
 
                 let numStr = String(numCell).toLowerCase().trim();
-                if (numStr === 'numero' || numStr === 'numéro' || numStr === 'num' || numStr === 'image' || numStr === 'stock') {
+                
+                // EXCLUSION des en-têtes et des titres d'onglets indésirables (#A6, #A5, #A4, Relief, Pal, [merged], etc.)
+                if (
+                    numStr === 'numero' || 
+                    numStr === 'numéro' || 
+                    numStr === 'num' || 
+                    numStr === 'image' || 
+                    numStr === 'stock' ||
+                    numStr.includes('[merged]') ||
+                    numStr.includes('a6') ||
+                    numStr.includes('a5') ||
+                    numStr.includes('a4') ||
+                    numStr.includes('relief') ||
+                    numStr.includes('pal')
+                ) {
                     continue;
                 }
                 
                 if (numCell !== "" && numCell !== undefined && numCell !== null) {
-                    // Extraction de l'ID Google Drive pour construire l'URL d'affichage direct
                     let match = finalUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || finalUrl.match(/id=([a-zA-Z0-9_-]+)/);
                     if (match && match[1]) {
                         finalUrl = `https://drive.google.com/uc?export=view&id=${match[1]}`;
@@ -429,21 +442,6 @@
                     });
                 }
             }
-
-            if (rows.length === 0 && raw.length > 0) {
-                for (let i = 0; i < raw.length; i++) {
-                    const row = raw[i];
-                    if (!row || !row[0]) continue;
-                    let numCell = row[0].text !== undefined ? row[0].text : row[0];
-                    let stockCell = row[1] ? (row[1].text !== undefined ? row[1].text : row[1]) : 0;
-                    rows.push({
-                        numero: numCell,
-                        stock: isNaN(Number(stockCell)) ? 0 : Number(stockCell),
-                        imageUrl: ""
-                    });
-                }
-            }
-
             return rows;
         }
 
@@ -510,7 +508,6 @@
 
                 let imageHtml = '';
                 if (item.imageUrl) {
-                    // Double sécurité de chargement d'image Google Drive avec secours automatique
                     imageHtml = `<img src="${item.imageUrl}" alt="Feuille #${item.numero}" onerror="if(!this.dataset.fallback){this.dataset.fallback='true'; this.src=this.src.replace('uc?export=view&id=', 'thumbnail?id=')+'&sz=w400';}else{this.style.display='none'; this.nextElementSibling.style.display='block';}">
                                  <span class="card-image-placeholder" style="display:none;">Aucune image</span>`;
                 } else {
