@@ -48,7 +48,7 @@
             font-size: 0.9em;
             font-weight: bold;
         }
-        /* Barre des onglets stylisée */
+        /* Barre des onglets (Filtrage par onglet) */
         .tabs-container {
             display: flex;
             gap: 10px;
@@ -270,10 +270,10 @@
         <div class="sync-badge">Synchronisé !</div>
     </header>
 
-    <!-- Boutons d'onglets dynamiques -->
+    <!-- Boutons d'onglets pour filtrer par feuille -->
     <div class="tabs-container" id="tabs-container"></div>
 
-    <!-- Statistiques -->
+    <!-- Statistiques dynamiques selon l'onglet -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-info">
@@ -340,7 +340,7 @@
 
                 const sheetNames = Object.keys(allSheetsData);
                 if (sheetNames.length > 0) {
-                    currentSheet = sheetNames[0];
+                    currentSheet = sheetNames[0]; // Sélectionne le premier onglet par défaut
                     renderTabs(sheetNames);
                     renderContent();
                 } else {
@@ -361,9 +361,9 @@
                 btn.className = `tab-btn ${name === currentSheet ? 'active' : ''}`;
                 btn.innerText = name;
                 btn.onclick = () => {
-                    currentSheet = name;
-                    renderTabs(sheetNames);
-                    renderContent();
+                    currentSheet = name; // Change l'onglet actif
+                    renderTabs(sheetNames); // Met à jour le style des boutons
+                    renderContent(); // Recharge les stats et les cartes de cet onglet
                 };
                 container.appendChild(btn);
             });
@@ -375,7 +375,8 @@
 
             let headerIndex = 0;
             for (let i = 0; i < Math.min(5, raw.length); i++) {
-                if (String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes('numero')) {
+                const rowText = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (rowText.includes('numero') || rowText.includes('num')) {
                     headerIndex = i;
                     break;
                 }
@@ -458,20 +459,27 @@
                 const badgeClass = inStock ? 'in-stock' : 'out-stock';
                 const badgeText = inStock ? `En stock (${item.stock})` : 'Épuisé';
 
+                // Gestion de l'affichage de l'image (si c'est une URL ou un texte descriptif)
+                let imageHtml = `<span class="card-image-placeholder">${item.image ? item.image : "Voir l'image"}</span>`;
+                if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://'))) {
+                    imageHtml = `<img src="${item.image}" alt="Feuille #${item.numero}" style="max-height:100%; max-width:100%; object-fit:contain;">`;
+                }
+
                 card.innerHTML = `
                     <div class="card-header">
                         <span class="card-num">#${item.numero}</span>
                         <span class="stock-badge ${badgeClass}">${badgeText}</span>
                     </div>
                     <div class="card-image-container">
-                        <span class="card-image-placeholder">${item.image ? item.image : "Voir l'image"}</span>
+                        ${imageHtml}
                     </div>
-                    <button class="zoom-btn" onclick="alert('Feuille #${item.numero} - Stock: ${item.stock}')">🔍 Agrandir</button>
+                    <button class="zoom-btn" onclick="alert('Onglet actif : ${currentSheet} - Feuille #${item.numero} - Stock : ${item.stock}')">🔍 Agrandir</button>
                 `;
                 grid.appendChild(card);
             });
         }
 
+        // Lancement de l'application
         initStockApp();
     </script>
 </body>
