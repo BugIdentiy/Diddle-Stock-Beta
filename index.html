@@ -48,7 +48,7 @@
             font-size: 0.9em;
             font-weight: bold;
         }
-        /* Barre des onglets (Filtrage par onglet) */
+        /* Barre des onglets */
         .tabs-container {
             display: flex;
             gap: 10px;
@@ -232,6 +232,7 @@
             justify-content: center;
             overflow: hidden;
             margin-bottom: 12px;
+            text-align: center;
         }
         .card-image-placeholder {
             color: #888;
@@ -273,7 +274,7 @@
     <!-- Boutons d'onglets pour filtrer par feuille -->
     <div class="tabs-container" id="tabs-container"></div>
 
-    <!-- Statistiques dynamiques selon l'onglet -->
+    <!-- Statistiques dynamiques -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-info">
@@ -340,7 +341,7 @@
 
                 const sheetNames = Object.keys(allSheetsData);
                 if (sheetNames.length > 0) {
-                    currentSheet = sheetNames[0]; // Sélectionne le premier onglet par défaut
+                    currentSheet = sheetNames[0]; // Onglet par défaut
                     renderTabs(sheetNames);
                     renderContent();
                 } else {
@@ -361,9 +362,9 @@
                 btn.className = `tab-btn ${name === currentSheet ? 'active' : ''}`;
                 btn.innerText = name;
                 btn.onclick = () => {
-                    currentSheet = name; // Change l'onglet actif
-                    renderTabs(sheetNames); // Met à jour le style des boutons
-                    renderContent(); // Recharge les stats et les cartes de cet onglet
+                    currentSheet = name;
+                    renderTabs(sheetNames);
+                    renderContent();
                 };
                 container.appendChild(btn);
             });
@@ -373,24 +374,29 @@
             const raw = allSheetsData[currentSheet];
             if (!raw || raw.length === 0) return [];
 
-            let headerIndex = 0;
-            for (let i = 0; i < Math.min(5, raw.length); i++) {
-                const rowText = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                if (rowText.includes('numero') || rowText.includes('num')) {
+            // Trouve automatiquement la ligne contenant "Numéro" ou "Numero"
+            let headerIndex = -1;
+            for (let i = 0; i < raw.length; i++) {
+                const rowStr = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (rowStr.includes('numero') || rowStr.includes('num')) {
                     headerIndex = i;
                     break;
                 }
             }
+
+            // Si non trouvé, on prend par défaut la ligne 2 ou la ligne 0
+            if (headerIndex === -1) headerIndex = (raw.length > 2 ? 2 : 0);
 
             const rows = [];
             for (let i = headerIndex + 1; i < raw.length; i++) {
                 const num = raw[i][0];
                 const stock = raw[i][1];
                 const img = raw[i][2];
-                if (num !== "" && num !== undefined) {
+                
+                if (num !== "" && num !== undefined && num !== null) {
                     rows.push({
                         numero: num,
-                        stock: isNaN(Number(stock)) ? 0 : Number(stock),
+                        stock: (stock === "" || isNaN(Number(stock))) ? 0 : Number(stock),
                         image: img || ""
                     });
                 }
@@ -403,11 +409,14 @@
 
             let total = rows.length;
             let inStockCount = 0;
-            let missingCount = 0;
+            let missingCount = function() {
+                let count = 0;
+                rows.forEach(r => { if (r.stock === 0) count++; });
+                return count;
+            }();
 
             rows.forEach(r => {
                 if (r.stock > 0) inStockCount++;
-                else missingCount++;
             });
 
             document.getElementById('stat-total').innerText = total;
@@ -426,7 +435,7 @@
 
         function renderCards() {
             const rows = getSheetRows();
-            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
             const perPageVal = document.getElementById('per-page').value;
             const limit = perPageVal === 'all' ? 999999 : Number(perPageVal);
             
@@ -459,7 +468,6 @@
                 const badgeClass = inStock ? 'in-stock' : 'out-stock';
                 const badgeText = inStock ? `En stock (${item.stock})` : 'Épuisé';
 
-                // Gestion de l'affichage de l'image (si c'est une URL ou un texte descriptif)
                 let imageHtml = `<span class="card-image-placeholder">${item.image ? item.image : "Voir l'image"}</span>`;
                 if (item.image && (item.image.startsWith('http://') || item.image.startsWith('https://'))) {
                     imageHtml = `<img src="${item.image}" alt="Feuille #${item.numero}" style="max-height:100%; max-width:100%; object-fit:contain;">`;
@@ -473,7 +481,7 @@
                     <div class="card-image-container">
                         ${imageHtml}
                     </div>
-                    <button class="zoom-btn" onclick="alert('Onglet actif : ${currentSheet} - Feuille #${item.numero} - Stock : ${item.stock}')">🔍 Agrandir</button>
+                    <button class="zoom-btn" onclick="alert('Onglet : ${currentSheet} | Numéro : #${item.numero} | Stock : ${item.stock}')">🔍 Agrandir</button>
                 `;
                 grid.appendChild(card);
             });
