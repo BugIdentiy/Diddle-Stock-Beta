@@ -67,6 +67,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            white-space: nowrap;
         }
         .tab-btn:hover {
             border-color: var(--primary-color);
@@ -326,7 +327,7 @@
     <div class="cards-grid" id="cards-grid"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbznAZtbLshwqB-mjfolCwapFTurGPLb5T_4DTcO6Lfd_Wq3Aex_VXGmVVIdJDN94br-/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRtEjY6pPmSuH0gL5dQZjIK2qNgAmKnMbyqc-02uBkIjxYHh0fv5sQkHh-6wa6CXu4/exec";
 
         let allSheetsData = {};
         let currentSheet = "";
@@ -337,6 +338,10 @@
                 const response = await fetch(SCRIPT_URL);
                 allSheetsData = await response.json();
                 
+                if (Array.isArray(allSheetsData)) {
+                    throw new Error("Le script Apps Script renvoie un tableau au lieu d'un objet multi-onglets.");
+                }
+
                 document.getElementById('loading-state').style.display = 'none';
 
                 const sheetNames = Object.keys(allSheetsData);
@@ -350,7 +355,9 @@
                 }
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading-state').innerText = "Erreur de chargement des données.";
+                document.getElementById('loading-state').innerText = err.message;
+                document.getElementById('loading-state').style.display = 'block';
+                document.getElementById('loading-state').style.color = '#c62828';
             }
         }
 
@@ -372,26 +379,28 @@
 
         function getSheetRows() {
             const raw = allSheetsData[currentSheet];
-            if (!raw || raw.length === 0) return [];
+            if (!raw || !Array.isArray(raw) || raw.length === 0) return [];
 
-            // Trouve automatiquement la ligne contenant "Numéro" ou "Numero"
             let headerIndex = -1;
             for (let i = 0; i < raw.length; i++) {
-                const rowStr = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                if (rowStr.includes('numero') || rowStr.includes('num')) {
-                    headerIndex = i;
-                    break;
+                if (raw[i] && raw[i][0]) {
+                    const rowStr = String(raw[i][0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    if (rowStr.includes('numero') || rowStr.includes('num')) {
+                        headerIndex = i;
+                        break;
+                    }
                 }
             }
 
-            // Si non trouvé, on prend par défaut la ligne 2 ou la ligne 0
             if (headerIndex === -1) headerIndex = (raw.length > 2 ? 2 : 0);
 
             const rows = [];
             for (let i = headerIndex + 1; i < raw.length; i++) {
-                const num = raw[i][0];
-                const stock = raw[i][1];
-                const img = raw[i][2];
+                const row = raw[i];
+                if (!row) continue;
+                const num = row[0];
+                const stock = row[1];
+                const img = row[2];
                 
                 if (num !== "" && num !== undefined && num !== null) {
                     rows.push({
@@ -409,14 +418,11 @@
 
             let total = rows.length;
             let inStockCount = 0;
-            let missingCount = function() {
-                let count = 0;
-                rows.forEach(r => { if (r.stock === 0) count++; });
-                return count;
-            }();
+            let missingCount = 0;
 
             rows.forEach(r => {
                 if (r.stock > 0) inStockCount++;
+                else missingCount++;
             });
 
             document.getElementById('stat-total').innerText = total;
